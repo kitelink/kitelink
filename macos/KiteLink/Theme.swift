@@ -24,8 +24,8 @@ enum Kite {
     static let rowSelected = dynamic(light: NSColor(red: 0.427, green: 0.455, blue: 0.957, alpha: 0.13), dark: NSColor(red: 0.56, green: 0.58, blue: 1, alpha: 0.24))
     static let hairline = Color.primary.opacity(0.09)
     /// A quiet card on the window background.
-    static let card = dynamic(light: NSColor(white: 1, alpha: 0.7), dark: NSColor(white: 1, alpha: 0.045))
-    static let cardHover = dynamic(light: NSColor(white: 1, alpha: 1), dark: NSColor(white: 1, alpha: 0.08))
+    static let card = dynamic(light: NSColor(white: 0, alpha: 0.035), dark: NSColor(white: 1, alpha: 0.045))
+    static let cardHover = dynamic(light: NSColor(white: 0, alpha: 0.065), dark: NSColor(white: 1, alpha: 0.08))
     /// The inside of a text field drawn by the app.
     static let field = dynamic(light: NSColor(white: 1, alpha: 1), dark: NSColor(white: 1, alpha: 0.06))
     static let good = Color(nsColor: .systemGreen)
@@ -39,6 +39,17 @@ enum Kite {
         if ms < 600 { return fair }
         return poor
     }
+}
+
+/// Window and list measures. The smallest window matches Clash Verge's (700 × 518), where the node list still
+/// shows two columns next to the default group list.
+enum Layout {
+    static let minWidth: CGFloat = 700
+    static let minHeight: CGFloat = 518
+    /// SwiftUI adds the title bar to the content's minimum, so the content asks for that much less.
+    static var minContentHeight: CGFloat = 486
+    /// Narrowest node cell; two fit beside the default group list at the minimum width.
+    static let nodeCell: CGFloat = 226
 }
 
 extension Font {

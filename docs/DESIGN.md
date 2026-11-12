@@ -14,7 +14,8 @@ those two are the product and everything else is a drawer you can open.
    (`content-disposition`), its quota and expiry come from `subscription-userinfo`, its refresh interval from
    `profile-update-interval`. There is nothing to configure before the node list appears.
 2. **Pick** — the window is the list: groups on the left with what each is using, the selected group's nodes on the
-   right. One click selects. Latency is already there, because a group is tested the first time it is shown.
+   right as a grid of small cards (two columns at the smallest window, 700 × 518, more as it widens). One click
+   selects. Latency is already there, because a group is tested the first time it is shown.
 3. **Leave** — close the window. The kite stays in the menu bar with the switch, the mode and the same node lists.
 
 ## Rules

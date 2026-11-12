@@ -2,7 +2,7 @@
 <h1 align="center">KiteLink</h1>
 <p align="center">A native proxy client for Clash / mihomo profiles.<br><b>Paste a link, pick a node, fly.</b></p>
 
-<p align="center"><img src="docs/images/main.png" width="760" alt="KiteLink main window: groups on the left, nodes with latency on the right"></p>
+<p align="center"><img src="docs/images/main.png" width="760" alt="KiteLink main window: groups on the left, a grid of nodes with latency on the right"></p>
 
 KiteLink is a small, native front end for the [mihomo](https://github.com/MetaCubeX/mihomo) core. It reads the same
 subscriptions and profiles as Clash Verge Rev, and is built around the two things most people actually do with a
@@ -19,7 +19,7 @@ for it.
 |---|---|
 | **One step to a working proxy** | Paste a subscription link (or open a `clash://install-config?url=…` link, or drop a `.yaml` file) and the node list is on screen about a second later. |
 | **Bring your setup** | *Import from Clash Verge Rev* copies its subscriptions, usage and node choices in one click, offline, without changing anything over there. |
-| **Nodes at a glance** | Groups on the left, nodes on the right with flag, protocol and latency. Latency is tested on its own the first time a group is shown; click a node to use it. |
+| **Nodes at a glance** | Groups on the left, nodes on the right as a grid with flag, protocol and latency — two columns in the smallest window, more as it widens. Latency is tested on its own the first time a group is shown; click a node to use it. The group list can be dragged narrower or wider and remembers its width. |
 | **Lives in the menu bar** | The kite in the menu bar has the switch, the mode (Rule / Global / Direct), every group with its nodes, and the profile switch. The window is optional. |
 | **Polite system proxy** | Switching System Proxy off (or quitting) puts back whatever proxy settings the Mac had before, so KiteLink can sit next to another client or a company proxy. |
 | **Subscriptions that keep themselves fresh** | Honours `profile-update-interval`, shows quota and expiry from `subscription-userinfo`, opens the provider's panel from `profile-web-page-url`. |

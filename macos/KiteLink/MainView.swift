@@ -25,7 +25,7 @@ struct MainView: View {
         .background(Kite.bg)
         .background(WindowSetup())
         .overlay(alignment: .bottom) { NoticeView() }
-        .frame(minWidth: 760, minHeight: 520)
+        .frame(minWidth: Layout.minWidth, minHeight: Layout.minContentHeight)
         .sheet(isPresented: $m.showProfiles) { ProfilesSheet().environmentObject(m) }
         .sheet(isPresented: $m.showImport) { ImportSheet(prefill: m.importPrefill, prefillName: m.importPrefillName).environmentObject(m) }
         .onOpenURL { m.handle(url: $0) }
@@ -47,11 +47,11 @@ struct TopBar: View {
     @EnvironmentObject var m: AppModel
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Color.clear.frame(width: 78)
-            Lockup()
+            Lockup().fixedSize()
             if !m.profiles.isEmpty { ProfileMenu() }
-            Spacer()
+            Spacer(minLength: 0)
             if !m.profiles.isEmpty {
                 ModePicker()
                 SystemProxyToggle()
@@ -78,10 +78,13 @@ struct ProfileMenu: View {
         } label: {
             (Text(m.activeProfile?.name ?? "No profile").font(.system(size: 13, weight: .medium))
                 + Text("  ") + Text(Image(systemName: "chevron.down")).font(.system(size: 8, weight: .bold)).foregroundColor(.secondary))
+                .lineLimit(1).truncationMode(.middle)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .fixedSize()
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: 220, alignment: .leading)
+        .layoutPriority(-1)
         .help("Switch profile")
     }
 }
@@ -94,7 +97,7 @@ struct ModePicker: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
-        .frame(width: 200)
+        .frame(width: 176)
         .help("Rule follows the profile's rules; Global sends everything through the selected node; Direct bypasses the proxy")
     }
 }
@@ -109,6 +112,7 @@ struct SystemProxyToggle: View {
                 .controlSize(.small)
                 .tint(Kite.accent)
         }
+        .fixedSize()
         .help(m.coreState.label)
     }
     var dot: Color {
@@ -301,14 +305,14 @@ struct NodeList: View {
         VStack(spacing: 0) {
             if let g = m.currentGroup {
                 HStack(spacing: 10) {
-                    Text(g.name).font(.system(size: 15, weight: .semibold)).lineLimit(1)
-                    Tag(text: g.typeLabel)
-                    Text("\(g.all?.count ?? 0)").font(.caption).foregroundStyle(.secondary)
+                    Text(g.name).font(.system(size: 15, weight: .semibold)).lineLimit(1).layoutPriority(-1)
+                    Tag(text: g.typeLabel).fixedSize()
+                    Text("\(g.all?.count ?? 0)").font(.caption).foregroundStyle(.secondary).fixedSize()
                     if g.isAutomatic && g.fixed != nil {
                         Button("Let it choose") { Task { await m.unfix(group: g.name) } }.controlSize(.small).help("Clear the manual pick so the group tests and chooses again")
                     }
                     Spacer()
-                    TextField("Filter", text: $filter).textFieldStyle(.roundedBorder).controlSize(.small).frame(width: 150)
+                    TextField("Filter", text: $filter).textFieldStyle(.roundedBorder).controlSize(.small).frame(minWidth: 80, maxWidth: 150)
                     Toggle(isOn: $sortByLatency) { Image(systemName: "arrow.up.arrow.down") }.toggleStyle(.button).controlSize(.small).help("Sort by latency")
                     Button {
                         Task { await m.test(group: g.name) }
@@ -322,9 +326,10 @@ struct NodeList: View {
                 .padding(.horizontal, 16).padding(.vertical, 10)
                 ScrollViewReader { scroller in
                     ScrollView {
-                        LazyVStack(spacing: 1) {
+                        // Two columns at the narrowest window, more as it widens.
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: Layout.nodeCell), spacing: 6)], spacing: 6) {
                             ForEach(nodes) { n in
-                                NodeRow(node: n, delay: m.delay(of: n), selected: g.now == n.name, testing: m.testing.contains(n.name)) {
+                                NodeCell(node: n, delay: m.delay(of: n), selected: g.now == n.name, testing: m.testing.contains(n.name)) {
                                     Task { await m.select(group: g.name, node: n.name) }
                                 } test: {
                                     Task { await m.test(node: n.name) }
@@ -332,9 +337,9 @@ struct NodeList: View {
                                 .id(n.name)
                             }
                         }
-                        .padding(.horizontal, 8).padding(.bottom, 12)
+                        .padding(.horizontal, 10).padding(.bottom, 12)
                     }
-                    // Open a group on the node it is using, not at the top of a hundred rows.
+                    // Open a group on the node it is using, not at the top of a hundred nodes.
                     .onChange(of: g.name, initial: true) { _, _ in
                         if let now = g.now { DispatchQueue.main.async { scroller.scrollTo(now, anchor: .center) } }
                     }
@@ -346,7 +351,8 @@ struct NodeList: View {
     }
 }
 
-struct NodeRow: View {
+/// One node: flag, name, and under the name its protocol and latency. The one in use is tinted and ticked.
+struct NodeCell: View {
     var node: ProxyInfo
     var delay: Int?
     var selected: Bool
@@ -358,27 +364,33 @@ struct NodeRow: View {
     var body: some View {
         let n = NodeName(node.name)
         Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundStyle(Kite.accent).frame(width: 14).opacity(selected ? 1 : 0)
+            HStack(spacing: 8) {
                 FlagView(name: n, isGroup: node.isGroup)
-                Text(n.title).font(.system(size: 13, weight: selected ? .semibold : .regular)).lineLimit(1)
-                Spacer(minLength: 8)
-                Tag(text: node.typeLabel)
-                Group {
-                    if testing { ProgressView().controlSize(.mini) }
-                    else if let d = delay { Text(d > 0 ? "\(d) ms" : "timeout").foregroundStyle(Kite.latency(d)) }
-                    else { Text("—").foregroundStyle(Kite.latency(nil)) }
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 5) {
+                        Text(n.title).font(.system(size: 13, weight: selected ? .semibold : .regular)).lineLimit(1)
+                        Spacer(minLength: 0)
+                        if selected { Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(Kite.accent) }
+                    }
+                    HStack(spacing: 5) {
+                        Text(node.typeLabel).foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        if testing { ProgressView().controlSize(.mini).scaleEffect(0.7).frame(height: 10) }
+                        else if let d = delay { Text(d > 0 ? "\(d) ms" : "timeout").foregroundStyle(Kite.latency(d)) }
+                        else { Text("—").foregroundStyle(Kite.latency(nil)) }
+                    }
+                    .font(.system(size: 10.5, design: .monospaced))
                 }
-                .font(.system(size: 11, design: .monospaced))
-                .frame(width: 62, alignment: .trailing)
             }
-            .padding(.horizontal, 10).padding(.vertical, 7)
+            .padding(.leading, 7).padding(.trailing, 10).padding(.vertical, 7)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 7).fill(selected ? Kite.rowSelected : hover ? Color.primary.opacity(0.04) : .clear))
+            .background(RoundedRectangle(cornerRadius: 9).fill(selected ? Kite.rowSelected : hover ? Kite.cardHover : Kite.card))
+            .overlay(RoundedRectangle(cornerRadius: 9).stroke(selected ? Kite.accent.opacity(0.5) : Color.clear, lineWidth: 1))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hover = $0 }
+        .help(node.name)
         .contextMenu {
             Button("Test Latency") { test() }
             Button("Copy Name") { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(node.name, forType: .string) }

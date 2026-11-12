@@ -15,6 +15,7 @@ import KiteKit
 ///   POST /window {"id":"console|settings|main"}
 ///   POST /proxy  {"on":true|false}   what the System Proxy switch does
 ///   POST /appearance {"mode":"light|dark|system"}
+///   POST /resize {"w":…,"h":…}       resize the main window, clamped to its minimum
 @MainActor
 final class DebugServer {
     static var shared: DebugServer?
@@ -92,7 +93,9 @@ final class DebugServer {
             return encode(state)
         case ("GET", "/window"):
             guard let w = mainWindow else { return "{}" }
-            return encode(["number": w.windowNumber, "x": w.frame.minX, "y": w.frame.minY, "w": w.frame.width, "h": w.frame.height, "key": w.isKeyWindow])
+            if let size = json["w"] as? Double, let h = json["h"] as? Double { w.setFrame(NSRect(x: w.frame.minX, y: w.frame.maxY - h, width: size, height: h), display: true) }
+            return encode(["number": w.windowNumber, "x": w.frame.minX, "y": w.frame.minY, "w": w.frame.width, "h": w.frame.height, "key": w.isKeyWindow,
+                           "minW": w.minSize.width, "minH": w.minSize.height, "contentMinW": w.contentMinSize.width, "contentMinH": w.contentMinSize.height])
         case ("POST", "/click"):
             guard let w = target(json), let x = json["x"] as? Double, let y = json["y"] as? Double else { return #"{"error":"no window"}"# }
             let count = json["count"] as? Int ?? 1
@@ -161,6 +164,13 @@ final class DebugServer {
             let on = json["on"] as? Bool ?? !m.settings.systemProxy
             Task { await m.setSystemProxy(on) }
             return "{}"
+        case ("POST", "/resize"):
+            // Asks for a size the way a drag would: AppKit clamps it to the window's minimum.
+            guard let w = mainWindow, let width = json["w"] as? Double, let h = json["h"] as? Double else { return "{}" }
+            let size = w.constrainFrameRect(NSRect(x: w.frame.minX, y: w.frame.maxY - h, width: width, height: h), to: w.screen).size
+            let clamped = NSSize(width: max(size.width, w.minSize.width), height: max(size.height, w.minSize.height))
+            w.setFrame(NSRect(x: w.frame.minX, y: w.frame.maxY - clamped.height, width: clamped.width, height: clamped.height), display: true)
+            return encode(["w": w.frame.width, "h": w.frame.height, "minW": w.minSize.width, "minH": w.minSize.height])
         case ("POST", "/window"):
             let id = json["id"] as? String ?? "main"
             if id == "settings" { NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil) }
