@@ -9,7 +9,10 @@ jobs:
   build:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          # SwiftPM clones Yams from inside this checkout; a stored token for this repository makes that clone fail.
+          persist-credentials: false
       - name: KiteKit tests
         run: cd packages/KiteKit && swift test
       - name: Tools
