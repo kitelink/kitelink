@@ -11,4 +11,9 @@ First version: the macOS app.
 - Subscription auto-update, quota and expiry; per-profile User-Agent, interval and fetch-through-proxy
 - Overrides (global and per profile) in the Clash Verge Rev merge format, validated with `mihomo -t`
 - Console with live logs and connections
+- Nodes as a grid of cards: two columns in the smallest window (700 × 518), more as it widens
+- Resizable group list that remembers its width
+- A designed first screen: paste a link, or import from Clash Verge Rev or a file
+- Brand: the kite's sail in the Dawn palette
+- Signed with a Developer ID and notarized
 - Bundles mihomo v1.19.34

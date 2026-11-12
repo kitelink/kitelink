@@ -51,6 +51,11 @@ The simple path does not take the advanced one away.
 
 Not in 0.1: TUN mode (it needs a privileged helper; planned), script overrides, share-link (base64) subscriptions.
 
+## Download
+
+[**KiteLink 0.1.0 for macOS**](https://github.com/kitelink/kitelink/releases/latest) — Apple silicon, macOS 14 or
+later. Signed with a Developer ID and notarized by Apple: open the dmg, drag KiteLink to Applications, open it.
+
 ## Build
 
 ```sh
@@ -60,8 +65,10 @@ brew install xcodegen
 open macos/build/KiteLink.app
 ```
 
-`./macos/package.sh` makes `dist/KiteLink-<version>-macos-arm64.dmg`. The build is ad-hoc signed; the first launch of
-a downloaded copy needs right-click → Open.
+`./macos/package.sh` makes `dist/KiteLink-<version>-macos-arm64.dmg`, ad-hoc signed for local use. With
+`KITELINK_SIGN_IDENTITY` (a Developer ID Application identity) and `KITELINK_NOTARY_PROFILE` (a `notarytool`
+keychain profile) it signs with the hardened runtime, notarizes and staples both the app and the dmg — that is how
+releases are made.
 
 Tests for the shared logic: `cd packages/KiteKit && swift test`.
 
