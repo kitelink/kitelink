@@ -151,6 +151,9 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// Empty means `AppSettings.defaultUserAgent`.
     public var subscriptionUserAgent: String = ""
     public var autoUpdateProfiles: Bool = true
+    /// Width of the group list in the main window, as the user left it.
+    public var sidebarWidth: Double = AppSettings.defaultSidebarWidth
+    public static let defaultSidebarWidth: Double = 196
 
     public init() {}
 
@@ -175,5 +178,6 @@ public struct AppSettings: Codable, Equatable, Sendable {
         startProxyOnLaunch = try c.decodeIfPresent(Bool.self, forKey: .startProxyOnLaunch) ?? d.startProxyOnLaunch
         subscriptionUserAgent = try c.decodeIfPresent(String.self, forKey: .subscriptionUserAgent) ?? d.subscriptionUserAgent
         autoUpdateProfiles = try c.decodeIfPresent(Bool.self, forKey: .autoUpdateProfiles) ?? d.autoUpdateProfiles
+        sidebarWidth = try c.decodeIfPresent(Double.self, forKey: .sidebarWidth) ?? d.sidebarWidth
     }
 }

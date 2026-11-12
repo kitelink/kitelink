@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 
 struct MainView: View {
     @EnvironmentObject var m: AppModel
+    /// Follows the drag; written to the settings when the drag ends.
+    @State private var sidebarWidth = CGFloat(AppModel.shared.settings.sidebarWidth)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,8 +15,8 @@ struct MainView: View {
                 Onboarding()
             } else {
                 HStack(spacing: 0) {
-                    GroupSidebar().frame(width: 232)
-                    Rectangle().fill(Kite.hairline).frame(width: 1)
+                    GroupSidebar(compact: sidebarWidth < 180).frame(width: sidebarWidth)
+                    SidebarDivider(width: $sidebarWidth) { m.settings.sidebarWidth = Double(sidebarWidth) }
                     NodeList()
                 }
             }
@@ -123,12 +125,14 @@ struct SystemProxyToggle: View {
 
 struct GroupSidebar: View {
     @EnvironmentObject var m: AppModel
+    /// Narrow: the names get the whole row.
+    var compact = false
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 LazyVStack(spacing: 2) {
-                    ForEach(m.groups) { g in GroupRow(group: g, selected: g.name == m.currentGroup?.name) { m.selectedGroup = g.name } }
+                    ForEach(m.groups) { g in GroupRow(group: g, selected: g.name == m.currentGroup?.name, compact: compact) { m.selectedGroup = g.name } }
                 }
                 .padding(8)
             }
@@ -157,6 +161,7 @@ struct GroupSidebar: View {
 struct GroupRow: View {
     var group: ProxyInfo
     var selected: Bool
+    var compact = false
     var action: () -> Void
     @State private var hover = false
 
@@ -170,7 +175,7 @@ struct GroupRow: View {
                     }
                 }
                 Spacer(minLength: 4)
-                if group.isAutomatic { Tag(text: group.typeLabel, tint: group.fixed != nil ? Kite.accent : .secondary) }
+                if group.isAutomatic, !compact { Tag(text: group.typeLabel, tint: group.fixed != nil ? Kite.accent : .secondary).fixedSize() }
             }
             .padding(.horizontal, 10).padding(.vertical, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -179,29 +184,89 @@ struct GroupRow: View {
         }
         .buttonStyle(.plain)
         .onHover { hover = $0 }
+        .help(group.isAutomatic ? "\(group.name) · \(group.typeLabel)" : group.name)
     }
 }
 
 struct Footer: View {
     @EnvironmentObject var m: AppModel
+
     var body: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 3) {
-                Image(systemName: "arrow.down").font(.system(size: 8, weight: .bold))
-                Text(m.traffic.down.bytesText + "/s")
-            }
-            HStack(spacing: 3) {
-                Image(systemName: "arrow.up").font(.system(size: 8, weight: .bold))
-                Text(m.traffic.up.bytesText + "/s")
-            }
-            Spacer()
-            Button { m.copyShellExport() } label: { Text(verbatim: ":\(m.settings.core.mixedPort)") }
-                .buttonStyle(.plain)
-                .help("127.0.0.1:\(m.settings.core.mixedPort) (HTTP + SOCKS) · \(m.coreState.label) — click to copy the shell proxy command")
+        // As much as fits: both rates and the port, then the rates, then the rates stacked.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) { down; up; Spacer(minLength: 6); port }
+            HStack(spacing: 10) { down; up; Spacer(minLength: 0) }
+            VStack(alignment: .leading, spacing: 3) { down; up }.frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.system(size: 10.5, design: .monospaced))
         .foregroundStyle(.secondary)
         .padding(.horizontal, 14).padding(.vertical, 8)
+    }
+
+    private var down: some View { rate("arrow.down", m.traffic.down) }
+    private var up: some View { rate("arrow.up", m.traffic.up) }
+
+    private func rate(_ icon: String, _ value: Int64) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon).font(.system(size: 8, weight: .bold))
+            Text(value.bytesText + "/s").lineLimit(1).fixedSize()
+        }
+    }
+
+    private var port: some View {
+        Button { m.copyShellExport() } label: { Text(verbatim: ":\(m.settings.core.mixedPort)").lineLimit(1).fixedSize() }
+            .buttonStyle(.plain)
+            .help("127.0.0.1:\(m.settings.core.mixedPort) (HTTP + SOCKS) · \(m.coreState.label) — click to copy the shell proxy command")
+    }
+}
+
+/// The line between the groups and the nodes. Drag it to resize the group list; double-click for the default width.
+struct SidebarDivider: View {
+    @Binding var width: CGFloat
+    var commit: () -> Void
+    static let range: ClosedRange<CGFloat> = 132...360
+
+    var body: some View {
+        Rectangle().fill(Kite.hairline).frame(width: 1)
+            .overlay(Grip(width: $width, commit: commit).frame(width: 9))
+            .zIndex(1)
+    }
+
+    /// AppKit, because the window moves when its background is dragged and this strip must not count as background.
+    struct Grip: NSViewRepresentable {
+        @Binding var width: CGFloat
+        var commit: () -> Void
+
+        func makeNSView(context: Context) -> GripView { GripView() }
+        func updateNSView(_ v: GripView, context: Context) {
+            v.current = { width }
+            v.change = { width = min(max($0, SidebarDivider.range.lowerBound), SidebarDivider.range.upperBound) }
+            v.commit = commit
+        }
+    }
+
+    final class GripView: NSView {
+        var current: () -> CGFloat = { 0 }
+        var change: (CGFloat) -> Void = { _ in }
+        var commit: () -> Void = {}
+        private var startX: CGFloat = 0
+        private var startWidth: CGFloat = 0
+
+        override var mouseDownCanMoveWindow: Bool { false }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+        override func resetCursorRects() { addCursorRect(bounds, cursor: .resizeLeftRight) }
+
+        override func mouseDown(with e: NSEvent) {
+            if e.clickCount == 2 {
+                change(CGFloat(AppSettings.defaultSidebarWidth))
+                commit()
+                return
+            }
+            startX = e.locationInWindow.x
+            startWidth = current()
+        }
+        override func mouseDragged(with e: NSEvent) { change(startWidth + e.locationInWindow.x - startX) }
+        override func mouseUp(with e: NSEvent) { if e.clickCount < 2 { commit() } }
     }
 }
 

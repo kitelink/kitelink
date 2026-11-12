@@ -10,6 +10,7 @@ import KiteKit
 ///   POST /click  {"x":…,"y":…,"count":1}   points from the main window's top-left
 ///   POST /key    {"chars":"…"} or {"key":"return|escape|tab"}
 ///   POST /scroll {"x":…,"y":…,"dy":…}
+///   POST /drag   {"x1":…,"x2":…,"y":…}      a horizontal drag
 ///   POST /paste  {"text":"…"}        types into the focused field via the pasteboard
 ///   POST /window {"id":"console|settings|main"}
 ///   POST /proxy  {"on":true|false}   what the System Proxy switch does
@@ -84,7 +85,7 @@ final class DebugServer {
                 "core": m.coreState.label, "running": m.coreState.isRunning, "systemProxy": m.settings.systemProxy,
                 "mode": m.settings.core.mode.rawValue, "profiles": m.profiles.map { ["id": $0.id, "name": $0.name, "active": $0.id == m.settings.activeProfileID] },
                 "groups": m.groups.map { ["name": $0.name, "type": $0.type, "now": $0.now ?? "", "count": $0.all?.count ?? 0] },
-                "selectedGroup": m.selectedGroup ?? "", "traffic": ["up": m.traffic.up, "down": m.traffic.down],
+                "selectedGroup": m.selectedGroup ?? "", "sidebarWidth": m.settings.sidebarWidth, "traffic": ["up": m.traffic.up, "down": m.traffic.down],
                 "notice": m.notice?.text ?? "", "sheets": ["profiles": m.showProfiles, "import": m.showImport],
                 "windows": NSApp.windows.filter { $0.isVisible }.map { ["title": $0.title, "id": $0.identifier?.rawValue ?? "", "number": $0.windowNumber, "w": $0.frame.width, "h": $0.frame.height] },
             ]
@@ -110,6 +111,17 @@ final class DebugServer {
             var v: NSView? = hit
             while let cur = v, chain.count < 6 { chain.append(String(describing: type(of: cur))); v = cur.superview }
             return encode(["hit": chain])
+        case ("POST", "/drag"):
+            guard let w = target(json), let x1 = json["x1"] as? Double, let y = json["y"] as? Double, let x2 = json["x2"] as? Double else { return "{}" }
+            func post(_ type: NSEvent.EventType, _ x: Double, _ n: Int) {
+                if let e = NSEvent.mouseEvent(with: type, location: NSPoint(x: x, y: w.frame.height - y), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: w.windowNumber, context: nil, eventNumber: 100 + n, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1) {
+                    NSApp.postEvent(e, atStart: false)
+                }
+            }
+            post(.leftMouseDown, x1, 0)
+            for i in 1...8 { post(.leftMouseDragged, x1 + (x2 - x1) * Double(i) / 8, i) }
+            post(.leftMouseUp, x2, 9)
+            return "{}"
         case ("POST", "/scroll"):
             guard let w = target(json), let x = json["x"] as? Double, let y = json["y"] as? Double, let dy = json["dy"] as? Double else { return "{}" }
             let p = NSPoint(x: x, y: w.frame.height - y)
