@@ -1,0 +1,10 @@
+# generated
+macos/build/
+macos/*.xcodeproj
+macos/DerivedData/
+.build/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+*.dmg
+dist/

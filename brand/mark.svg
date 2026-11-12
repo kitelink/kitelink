@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C3C7E"/><stop offset="1" stop-color="#0F1433"/></linearGradient>
+    <radialGradient id="glow" cx="560" cy="430" r="420" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF8A5B" stop-opacity="0.28"/><stop offset="1" stop-color="#FF8A5B" stop-opacity="0"/></radialGradient>
+    <linearGradient id="kite" gradientUnits="userSpaceOnUse" x1="490.1" y1="226.1" x2="611.4" y2="649.1"><stop offset="0" stop-color="#FFC857"/><stop offset="1" stop-color="#FF6B4A"/></linearGradient>
+  </defs>
+  <g fill="none" stroke="#FFF3DC" stroke-width="24" stroke-linecap="round">
+    <path d="M611.4 649.1 C601.4 779.1 508.0 798.0 358.0 808.0"/>
+    <circle cx="327.0" cy="808.0" r="31"/>
+  </g>
+  <path d="M490.1 226.1 L683.9 357.8 L611.4 649.1 L395.5 440.5Z" fill="url(#kite)"/>
+  <path d="M490.1 226.1 L683.9 357.8 L611.4 649.1Z" fill="#1A0D1A" fill-opacity="0.18"/>
+  <path d="M490.1 226.1 L611.4 649.1 M395.5 440.5 L683.9 357.8" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="5" fill="none"/>
+</svg>

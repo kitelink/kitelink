@@ -1,0 +1,24 @@
+name: macOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: KiteKit tests
+        run: cd packages/KiteKit && swift test
+      - name: Tools
+        run: brew install xcodegen
+      - name: Core
+        run: ./core/fetch.sh darwin-arm64 macos/build/core
+      - name: Package
+        run: ./macos/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KiteLink-macos-arm64
+          path: dist/*.dmg

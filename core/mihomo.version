@@ -1,0 +1,3 @@
+# The mihomo (Clash Meta) core KiteLink ships. One line per platform asset: tag, asset file, sha256.
+# `core/fetch.sh <platform>` downloads it into the platform's build directory and verifies the hash.
+v1.19.34 mihomo-darwin-arm64-v1.19.34.gz a55a9073f9b7b1fa596a82c034d2dae3407ec34732102b6e42c5513ce3033f34

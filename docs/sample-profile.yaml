@@ -1,0 +1,42 @@
+# A sample profile for trying KiteLink without a subscription: every node is a direct connection,
+# so it runs anywhere. Drop this file on the KiteLink window, or Profiles → Add → Profile File….
+mixed-port: 7890
+mode: rule
+log-level: info
+
+proxies:
+  - {name: "🇭🇰 Hong Kong 01", type: direct}
+  - {name: "🇭🇰 Hong Kong 02", type: direct}
+  - {name: "🇯🇵 Tokyo 01", type: direct}
+  - {name: "🇯🇵 Tokyo 02", type: direct}
+  - {name: "🇯🇵 Osaka 01", type: direct}
+  - {name: "🇸🇬 Singapore 01", type: direct}
+  - {name: "🇸🇬 Singapore 02", type: direct}
+  - {name: "🇰🇷 Seoul 01", type: direct}
+  - {name: "🇺🇸 Los Angeles 01", type: direct}
+  - {name: "🇺🇸 Seattle 01", type: direct}
+  - {name: "🇩🇪 Frankfurt 01", type: direct}
+  - {name: "🇬🇧 London 01", type: direct}
+  - {name: "🇦🇺 Sydney 01", type: direct}
+
+proxy-groups:
+  - {name: Proxy, type: select, proxies: [Auto, Fallback, "🇭🇰 Hong Kong 01", "🇭🇰 Hong Kong 02", "🇯🇵 Tokyo 01", "🇯🇵 Tokyo 02", "🇯🇵 Osaka 01", "🇸🇬 Singapore 01", "🇸🇬 Singapore 02", "🇰🇷 Seoul 01", "🇺🇸 Los Angeles 01", "🇺🇸 Seattle 01", "🇩🇪 Frankfurt 01", "🇬🇧 London 01", "🇦🇺 Sydney 01"]}
+  - {name: Auto, type: url-test, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 50, proxies: ["🇭🇰 Hong Kong 01", "🇭🇰 Hong Kong 02", "🇯🇵 Tokyo 01", "🇯🇵 Tokyo 02", "🇯🇵 Osaka 01", "🇸🇬 Singapore 01", "🇸🇬 Singapore 02", "🇰🇷 Seoul 01", "🇺🇸 Los Angeles 01", "🇺🇸 Seattle 01", "🇩🇪 Frankfurt 01", "🇬🇧 London 01", "🇦🇺 Sydney 01"]}
+  - {name: Fallback, type: fallback, url: "https://www.gstatic.com/generate_204", interval: 300, proxies: ["🇭🇰 Hong Kong 01", "🇭🇰 Hong Kong 02", "🇯🇵 Tokyo 01", "🇯🇵 Tokyo 02", "🇯🇵 Osaka 01", "🇸🇬 Singapore 01", "🇸🇬 Singapore 02", "🇰🇷 Seoul 01", "🇺🇸 Los Angeles 01", "🇺🇸 Seattle 01", "🇩🇪 Frankfurt 01", "🇬🇧 London 01", "🇦🇺 Sydney 01"]}
+  - {name: Streaming, type: select, proxies: [Proxy, "🇭🇰 Hong Kong 01", "🇭🇰 Hong Kong 02", "🇯🇵 Tokyo 01", "🇯🇵 Tokyo 02", "🇯🇵 Osaka 01", "🇸🇬 Singapore 01", "🇸🇬 Singapore 02", "🇺🇸 Los Angeles 01", "🇺🇸 Seattle 01"]}
+  - {name: AI, type: select, proxies: [Proxy, "🇯🇵 Tokyo 01", "🇯🇵 Tokyo 02", "🇯🇵 Osaka 01", "🇸🇬 Singapore 01", "🇸🇬 Singapore 02", "🇺🇸 Los Angeles 01", "🇺🇸 Seattle 01"]}
+  - {name: Telegram, type: select, proxies: [Proxy, DIRECT]}
+  - {name: Apple, type: select, proxies: [DIRECT, Proxy]}
+  - {name: Final, type: select, proxies: [Proxy, DIRECT]}
+
+rules:
+  - DOMAIN-SUFFIX,netflix.com,Streaming
+  - DOMAIN-SUFFIX,youtube.com,Streaming
+  - DOMAIN-SUFFIX,openai.com,AI
+  - DOMAIN-SUFFIX,anthropic.com,AI
+  - DOMAIN-SUFFIX,telegram.org,Telegram
+  - DOMAIN-SUFFIX,apple.com,Apple
+  - DOMAIN-SUFFIX,icloud.com,Apple
+  - GEOIP,LAN,DIRECT,no-resolve
+  - GEOIP,CN,DIRECT
+  - MATCH,Final

@@ -1,0 +1,55 @@
+# KiteLink for macOS — xcodegen spec. `./build.sh` generates KiteLink.xcodeproj from it and builds the app.
+# The core (mihomo) and its geo data are fetched by ../core/fetch.sh into build/core and copied into the bundle.
+name: KiteLink
+options:
+  bundleIdPrefix: dev.kitelink
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  KiteKit:
+    path: ../packages/KiteKit
+targets:
+  KiteLink:
+    type: application
+    platform: macOS
+    sources:
+      - path: KiteLink
+    dependencies:
+      - package: KiteKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.kitelink.mac
+        PRODUCT_NAME: KiteLink
+        INFOPLIST_FILE: KiteLink/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+        DEAD_CODE_STRIPPING: YES
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_APP_SANDBOX: NO
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        SWIFT_STRICT_CONCURRENCY: minimal
+    postBuildScripts:
+      - name: Bundle core
+        shell: /bin/sh
+        script: |
+          set -e
+          CORE="$PROJECT_DIR/build/core"
+          [ -x "$CORE/mihomo" ] || "$PROJECT_DIR/../core/fetch.sh" darwin-arm64 "$CORE"
+          APP="$TARGET_BUILD_DIR/$WRAPPER_NAME"
+          cp "$CORE/mihomo" "$APP/Contents/MacOS/mihomo"
+          mkdir -p "$APP/Contents/Resources/geo"
+          cp "$CORE/geoip.metadb" "$CORE/geosite.dat" "$CORE/country.mmdb" "$APP/Contents/Resources/geo/"
+          codesign --force --sign - "$APP/Contents/MacOS/mihomo"
