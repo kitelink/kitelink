@@ -13,10 +13,15 @@ enum SystemProxy {
         }
     }
 
-    static func disableAsync(backup: URL) async {
+    static func disableAsync(backup: URL, port: Int) async {
         await withCheckedContinuation { (c: CheckedContinuation<Void, Never>) in
-            queue.async { disable(backup: backup); c.resume() }
+            queue.async { disable(backup: backup, port: port); c.resume() }
         }
+    }
+
+    /// For quitting: waits its turn behind any change still in flight, then blocks until done.
+    static func disableNow(backup: URL, port: Int) {
+        queue.sync { disable(backup: backup, port: port) }
     }
 
     struct Entry: Codable, Equatable {
@@ -39,7 +44,11 @@ enum SystemProxy {
 
     static func services() -> [String] {
         let out = run(["-listallnetworkservices"])
-        return out.split(separator: "\n").dropFirst().map(String.init).filter { !$0.hasPrefix("*") && !$0.isEmpty }
+        let all = out.split(separator: "\n").dropFirst().map(String.init).filter { !$0.hasPrefix("*") && !$0.isEmpty }
+        // KITELINK_PROXY_SERVICES="Thunderbolt Bridge,…" limits which services are touched (tests on a machine in use).
+        guard let only = ProcessInfo.processInfo.environment["KITELINK_PROXY_SERVICES"] else { return all }
+        let names = only.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        return all.filter(names.contains)
     }
 
     static func enable(port: Int, bypass: String, backup: URL) {
@@ -65,20 +74,25 @@ enum SystemProxy {
         }
     }
 
-    static func disable(backup: URL) {
-        let before = (try? Data(contentsOf: backup)).flatMap { try? JSONDecoder().decode([String: Saved].self, from: $0) } ?? [:]
+    /// Puts back what `enable` saved. Without a saved state (a second call, or nothing was ever switched on) only
+    /// services still pointing at our own port are switched off: settings that are not ours are never touched.
+    static func disable(backup: URL, port: Int) {
+        let saved = (try? Data(contentsOf: backup)).flatMap { try? JSONDecoder().decode([String: Saved].self, from: $0) }
         try? FileManager.default.removeItem(at: backup)
+        let ours = Entry(enabled: true, server: "127.0.0.1", port: port)
         let all = services()
         DispatchQueue.concurrentPerform(iterations: all.count) { i in
             let s = all[i]
-            if let saved = before[s] {
+            if let before = saved?[s] {
                 for k in kinds {
-                    let e = saved[keyPath: k.key]
-                    if e.enabled, !e.server.isEmpty, e.port > 0 { run([k.set, s, e.server, String(e.port)]) } else { run([k.state, s, "off"]) }
+                    let e = before[keyPath: k.key]
+                    // Server and port go back even when the proxy was off, so nothing of ours is left in the fields.
+                    run([k.set, s, e.server, String(e.port)])
+                    if !e.enabled || e.server.isEmpty { run([k.state, s, "off"]) }
                 }
-                run(["-setproxybypassdomains", s] + (saved.bypass.isEmpty ? ["Empty"] : saved.bypass))
+                run(["-setproxybypassdomains", s] + (before.bypass.isEmpty ? ["Empty"] : before.bypass))
             } else {
-                for k in kinds { run([k.state, s, "off"]) }
+                for k in kinds where read(k.get, s) == ours { run([k.state, s, "off"]) }
             }
         }
     }

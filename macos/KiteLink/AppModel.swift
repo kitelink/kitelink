@@ -80,7 +80,10 @@ final class AppModel: ObservableObject {
     func boot() async {
         installGeoIfNeeded()
         if settings.activeProfileID == nil, let first = profiles.first { settings.activeProfileID = first.id }
+        // A run that crashed with System Proxy on left the Mac pointing at us; reconcile settles it either way.
+        if FileManager.default.fileExists(atPath: proxyBackup.path) { proxyAppliedPort = settings.core.mixedPort }
         if activeProfile != nil, settings.startProxyOnLaunch { await start() }
+        await reconcileSystemProxy()
         updateTimer = Timer.scheduledTimer(withTimeInterval: 15 * 60, repeats: true) { [weak self] _ in
             Task { @MainActor in await self?.autoUpdateTick() }
         }
@@ -95,8 +98,39 @@ final class AppModel: ObservableObject {
     }
 
     func shutdown() {
-        if settings.systemProxy { SystemProxy.disable(backup: proxyBackup) }
+        if proxyAppliedPort != nil || FileManager.default.fileExists(atPath: proxyBackup.path) {
+            SystemProxy.disableNow(backup: proxyBackup, port: proxyAppliedPort ?? settings.core.mixedPort)
+        }
         core.stop()
+    }
+
+    // MARK: - System proxy
+
+    /// The port the Mac's network services point at because of us, or nil.
+    private var proxyAppliedPort: Int?
+    private var proxyReconciling = false
+    /// The mixed port did not bind, so pointing the system at it would cut the Mac off.
+    private var listenerFailed = false
+
+    private var proxyWantedPort: Int? {
+        settings.systemProxy && coreState.isRunning && !listenerFailed ? settings.core.mixedPort : nil
+    }
+
+    /// The only place the system proxy is changed while running: moves the Mac to what the switch and the core's
+    /// state ask for, one change at a time, however many times the switch moved in between.
+    func reconcileSystemProxy() async {
+        guard !proxyReconciling else { return }
+        proxyReconciling = true
+        defer { proxyReconciling = false }
+        while proxyAppliedPort != proxyWantedPort {
+            let want = proxyWantedPort
+            if let port = want {
+                await SystemProxy.enableAsync(port: port, bypass: settings.bypass, backup: proxyBackup)
+            } else {
+                await SystemProxy.disableAsync(backup: proxyBackup, port: proxyAppliedPort ?? settings.core.mixedPort)
+            }
+            proxyAppliedPort = want
+        }
     }
 
     /// Geo databases ship in the bundle; the core wants them next to its config.
@@ -138,11 +172,12 @@ final class AppModel: ObservableObject {
             await refreshProxies()
             streamTraffic()
             // The core keeps running when a listener cannot bind; without the mixed port nothing can use it.
+            listenerFailed = false
             if let e = core.errors.first(where: { $0.contains("Mixed") && $0.contains("listen") }) {
+                listenerFailed = true
                 notify(explain(e), error: true)
-            } else if settings.systemProxy {
-                await SystemProxy.enableAsync(port: settings.core.mixedPort, bypass: settings.bypass, backup: proxyBackup)
             }
+            await reconcileSystemProxy()
         } catch {
             coreState = .failed(error.localizedDescription)
         }
@@ -158,18 +193,13 @@ final class AppModel: ObservableObject {
         proxies = [:]
         groups = []
         traffic = Traffic(up: 0, down: 0)
-        if settings.systemProxy, !keepSystemProxy { let b = proxyBackup; Task { await SystemProxy.disableAsync(backup: b) } }
+        if !keepSystemProxy { Task { await reconcileSystemProxy() } }
     }
 
     /// Stop asked for by the user: the switch goes off with it, so the window never claims a proxy that is not there.
     func userStop() {
-        let wasOn = settings.systemProxy
-        stop(keepSystemProxy: true)
-        if wasOn {
-            settings.systemProxy = false
-            let b = proxyBackup
-            Task { await SystemProxy.disableAsync(backup: b) }
-        }
+        if settings.systemProxy { settings.systemProxy = false }
+        stop()
     }
 
     func restartCore() async {
@@ -185,7 +215,7 @@ final class AppModel: ObservableObject {
         proxies = [:]
         groups = []
         // Do not leave the Mac pointing at a port nobody listens on.
-        if settings.systemProxy { let b = proxyBackup; Task { await SystemProxy.disableAsync(backup: b) } }
+        Task { await reconcileSystemProxy() }
     }
 
     /// Turns the core's bind error into what to do about it.
@@ -304,14 +334,7 @@ final class AppModel: ObservableObject {
 
     func setSystemProxy(_ on: Bool) async {
         settings.systemProxy = on
-        if on {
-            if !coreState.isRunning { await start() }
-            else { await SystemProxy.enableAsync(port: settings.core.mixedPort, bypass: settings.bypass, backup: proxyBackup) }
-        } else {
-            await SystemProxy.disableAsync(backup: proxyBackup)
-        }
-        // The switch may have moved again while the network settings were being written.
-        if settings.systemProxy != on { await setSystemProxy(settings.systemProxy) }
+        if on, !coreState.isRunning, coreState != .starting { await start() } else { await reconcileSystemProxy() }
     }
 
     private func streamTraffic() {

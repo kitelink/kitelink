@@ -26,8 +26,10 @@ those two are the product and everything else is a drawer you can open.
 - **Nothing is hidden for good.** Whatever a profile can express in mihomo, an override can change, and the generated
   config is a readable file.
 - **Leave the Mac as we found it.** System Proxy saves the previous settings of every network service and restores
-  them when it is switched off, on quit, and when the core dies. A core left over from a killed run is cleaned up on
-  the next start.
+  them when it is switched off, on quit, and when the core dies; without a saved state it only switches off services
+  that still point at KiteLink's own port, so settings that are not ours are never touched. One reconcile loop moves
+  the Mac to what the switch asks for, however fast the switch is flipped. A core left over from a killed run is
+  cleaned up on the next start.
 - **Say what is wrong in the user's terms.** "Port 7890 is in use by another app. Quit it, or change the port in
   Settings › Proxy.", not a bind error. Background refresh failures stay on the profile row; they do not interrupt.
 - **Names are data, not decoration.** The flag column is derived from the node name (flag emoji, ISO code or place
@@ -63,6 +65,8 @@ those two are the product and everything else is a drawer you can open.
 ```
 
 `KITELINK_HOME=/some/dir` points the app at another folder (development, tests).
+`KITELINK_PROXY_SERVICES="Thunderbolt Bridge"` limits System Proxy to the named network services, for testing it on
+a machine that is in use.
 
 ## Structure
 

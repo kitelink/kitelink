@@ -12,6 +12,7 @@ import KiteKit
 ///   POST /scroll {"x":…,"y":…,"dy":…}
 ///   POST /paste  {"text":"…"}        types into the focused field via the pasteboard
 ///   POST /window {"id":"console|settings|main"}
+///   POST /proxy  {"on":true|false}   what the System Proxy switch does
 @MainActor
 final class DebugServer {
     static var shared: DebugServer?
@@ -134,6 +135,11 @@ final class DebugServer {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
             send(key: "v", code: 9, window: w, flags: .command)
+            return "{}"
+        case ("POST", "/proxy"):
+            // The same call the System Proxy switch makes, for when the window is not on screen.
+            let on = json["on"] as? Bool ?? !m.settings.systemProxy
+            Task { await m.setSystemProxy(on) }
             return "{}"
         case ("POST", "/window"):
             let id = json["id"] as? String ?? "main"
