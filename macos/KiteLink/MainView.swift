@@ -23,7 +23,7 @@ struct MainView: View {
         .background(Kite.bg)
         .background(WindowSetup())
         .overlay(alignment: .bottom) { NoticeView() }
-        .frame(minWidth: 760, minHeight: 480)
+        .frame(minWidth: 760, minHeight: 520)
         .sheet(isPresented: $m.showProfiles) { ProfilesSheet().environmentObject(m) }
         .sheet(isPresented: $m.showImport) { ImportSheet(prefill: m.importPrefill, prefillName: m.importPrefillName).environmentObject(m) }
         .onOpenURL { m.handle(url: $0) }
@@ -323,37 +323,100 @@ struct NodeRow: View {
 
 // ---------------------------------------------------------------------------------------------- first run
 
+/// The first screen: one column, one job. The mark over a dawn glow, what to do in a line, the link field as the only
+/// strong element, and the two other ways in as quiet cards that say what they will find.
 struct Onboarding: View {
     @EnvironmentObject var m: AppModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var link = ""
     @State private var busy = false
     @State private var error: String?
     @State private var showVerge = false
+    @State private var vergeCount = 0
+    @State private var aloft = false
+    @FocusState private var focused: Bool
 
     var body: some View {
-        VStack(spacing: 18) {
-            KiteMark(size: 104)
-            VStack(spacing: 6) {
-                Text("Add your subscription").font(.system(size: 22, weight: .semibold))
-                Text("Paste the link your provider gave you. KiteLink keeps it fresh and puts your nodes in the menu bar.")
-                    .foregroundStyle(.secondary).multilineTextAlignment(.center).frame(maxWidth: 380)
-            }
-            HStack(spacing: 8) {
-                TextField("https://…", text: $link).textFieldStyle(.roundedBorder).frame(width: 340).onSubmit { submit() }
-                Button(action: submit) {
-                    if busy { ProgressView().controlSize(.small).frame(width: 40) } else { Text("Import").frame(width: 40) }
+        ZStack {
+            DawnGlow()
+            VStack(spacing: 0) {
+                Spacer(minLength: 12)
+                KiteMark(size: 88)
+                    .shadow(color: Kite.lilac.opacity(0.4), radius: 28, y: 12)
+                    .offset(y: aloft ? -4 : 4)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 3.4).repeatForever(autoreverses: true), value: aloft)
+                    .padding(.bottom, 20)
+                Text("Add your subscription")
+                    .font(.system(size: 28, weight: .bold)).tracking(-0.6)
+                Text("Paste the link from your provider. KiteLink keeps it fresh\nand puts every node in your menu bar.")
+                    .font(.system(size: 13.5)).lineSpacing(3)
+                    .foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .padding(.top, 9)
+                linkField.padding(.top, 26)
+                if let error {
+                    Label(error, systemImage: "exclamationmark.circle.fill")
+                        .font(.system(size: 11.5)).foregroundStyle(Kite.poor)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 8).padding(.horizontal, 4)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).tint(Kite.accent).disabled(busy || link.isEmpty)
+                HStack(spacing: 12) {
+                    Rectangle().fill(Kite.hairline).frame(height: 1)
+                    Text("or").font(.system(size: 11, weight: .medium)).foregroundStyle(.tertiary)
+                    Rectangle().fill(Kite.hairline).frame(height: 1)
+                }
+                .padding(.vertical, 16)
+                HStack(spacing: 10) {
+                    if vergeCount > 0 {
+                        EntryCard(icon: "square.and.arrow.down", title: "From Clash Verge Rev",
+                                  detail: "\(vergeCount) subscription\(vergeCount == 1 ? "" : "s") found") { showVerge = true }
+                    }
+                    EntryCard(icon: "doc.text", title: "Open a profile file", detail: "Clash or mihomo .yaml") { openFile() }
+                }
+                Spacer(minLength: 12)
+                Steps().padding(.bottom, 18)
             }
-            if let error { Text(error).font(.caption).foregroundStyle(Kite.poor).frame(maxWidth: 400) }
-            HStack(spacing: 18) {
-                if VergeImport.isInstalled() { Button("Import from Clash Verge Rev…") { showVerge = true } }
-                Button("Open a profile file…") { openFile() }
-            }
-            .buttonStyle(.link).font(.callout)
+            .frame(width: 452)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(isPresented: $showVerge) { VergeImportSheet().environmentObject(m) }
+        .onAppear {
+            aloft = true
+            focused = true
+            vergeCount = (try? VergeImport.load().count) ?? 0
+        }
+    }
+
+    /// Field and button as one control: the only thing on the screen with weight.
+    private var linkField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "link")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(focused ? Kite.accent : Color.secondary)
+            TextField("Paste your subscription link", text: $link)
+                .textFieldStyle(.plain).font(.system(size: 14))
+                .focused($focused)
+                .onSubmit(submit)
+            Button(action: submit) {
+                Group {
+                    if busy { ProgressView().controlSize(.small) } else { Text("Import").font(.system(size: 13, weight: .semibold)) }
+                }
+                .frame(width: 70, height: 32)
+                .foregroundStyle(link.isEmpty ? Color.secondary : Color.white)
+                .background(RoundedRectangle(cornerRadius: 9).fill(link.isEmpty ? AnyShapeStyle(Color.primary.opacity(0.07)) : AnyShapeStyle(Kite.accent)))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(busy || link.isEmpty)
+            .keyboardShortcut(.defaultAction)
+        }
+        .padding(.leading, 14).padding(.trailing, 7)
+        .frame(height: 46)
+        .background(RoundedRectangle(cornerRadius: 13).fill(Kite.field))
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(focused ? Kite.accent.opacity(0.85) : Kite.hairline, lineWidth: focused ? 1.5 : 1))
+        .shadow(color: focused ? Kite.accent.opacity(0.22) : .clear, radius: 12, y: 2)
+        .animation(.easeOut(duration: 0.15), value: focused)
+        .animation(.easeOut(duration: 0.15), value: link.isEmpty)
     }
 
     func submit() {
@@ -370,6 +433,72 @@ struct Onboarding: View {
         p.allowedContentTypes = [UTType.yaml, UTType(filenameExtension: "yml") ?? .yaml]
         p.allowsMultipleSelection = false
         if p.runModal() == .OK, let u = p.url { m.handle(url: u) }
+    }
+}
+
+/// A soft dawn behind the mark: the palette as light, not as decoration.
+struct DawnGlow: View {
+    var body: some View {
+        GeometryReader { g in
+            ZStack {
+                RadialGradient(colors: [Kite.lilac.opacity(0.2), .clear], center: UnitPoint(x: 0.57, y: 0.2), startRadius: 0, endRadius: g.size.width * 0.44)
+                RadialGradient(colors: [Kite.rose.opacity(0.11), .clear], center: UnitPoint(x: 0.4, y: 0.27), startRadius: 0, endRadius: g.size.width * 0.38)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// Another way in: an icon, what it is, and what it will find.
+struct EntryCard: View {
+    var icon: String
+    var title: String
+    var detail: String
+    var action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 11) {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium)).foregroundStyle(Kite.accent)
+                    .frame(width: 32, height: 32)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Kite.accent.opacity(0.14)))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+                    Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 56).frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 13).fill(hover ? Kite.cardHover : Kite.card))
+            .overlay(RoundedRectangle(cornerRadius: 13).stroke(hover ? Kite.accent.opacity(0.45) : Kite.hairline))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hover = $0 }
+        .animation(.easeOut(duration: 0.12), value: hover)
+    }
+}
+
+/// The whole product in one line, with the step you are on lit.
+struct Steps: View {
+    private let items = ["Paste a link", "Pick a node", "Fly"]
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(Array(items.enumerated()), id: \.offset) { i, text in
+                if i > 0 { Rectangle().fill(Kite.hairline).frame(width: 22, height: 1) }
+                HStack(spacing: 6) {
+                    Text("\(i + 1)")
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                        .foregroundStyle(i == 0 ? Color.white : Color.secondary)
+                        .frame(width: 16, height: 16)
+                        .background(Circle().fill(i == 0 ? AnyShapeStyle(Kite.accent) : AnyShapeStyle(Color.primary.opacity(0.08))))
+                    Text(text).font(.system(size: 11.5, weight: i == 0 ? .medium : .regular)).foregroundStyle(i == 0 ? Color.primary : Color.secondary)
+                }
+            }
+        }
     }
 }
 

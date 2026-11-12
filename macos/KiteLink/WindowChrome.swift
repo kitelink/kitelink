@@ -23,7 +23,7 @@ struct WindowSetup: NSViewRepresentable {
             w.titleVisibility = .hidden
             w.styleMask.insert(.fullSizeContentView)
             w.toolbar = nil
-            w.minSize = NSSize(width: 760, height: 480)
+            w.minSize = NSSize(width: 760, height: 520)
             w.tabbingMode = .disallowed
             w.isMovableByWindowBackground = true
             for name in [NSWindow.didResizeNotification, NSWindow.didUpdateNotification, NSWindow.didExitFullScreenNotification, NSWindow.didBecomeKeyNotification] {

@@ -23,6 +23,11 @@ enum Kite {
     static let bg = dynamic(light: NSColor(white: 1, alpha: 1), dark: NSColor(white: 0.16, alpha: 1))
     static let rowSelected = dynamic(light: NSColor(red: 0.427, green: 0.455, blue: 0.957, alpha: 0.13), dark: NSColor(red: 0.56, green: 0.58, blue: 1, alpha: 0.24))
     static let hairline = Color.primary.opacity(0.09)
+    /// A quiet card on the window background.
+    static let card = dynamic(light: NSColor(white: 1, alpha: 0.7), dark: NSColor(white: 1, alpha: 0.045))
+    static let cardHover = dynamic(light: NSColor(white: 1, alpha: 1), dark: NSColor(white: 1, alpha: 0.08))
+    /// The inside of a text field drawn by the app.
+    static let field = dynamic(light: NSColor(white: 1, alpha: 1), dark: NSColor(white: 1, alpha: 0.06))
     static let good = Color(nsColor: .systemGreen)
     static let fair = Color(nsColor: .systemOrange)
     static let poor = Color(nsColor: .systemRed)

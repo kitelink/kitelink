@@ -13,6 +13,7 @@ import KiteKit
 ///   POST /paste  {"text":"…"}        types into the focused field via the pasteboard
 ///   POST /window {"id":"console|settings|main"}
 ///   POST /proxy  {"on":true|false}   what the System Proxy switch does
+///   POST /appearance {"mode":"light|dark|system"}
 @MainActor
 final class DebugServer {
     static var shared: DebugServer?
@@ -135,6 +136,13 @@ final class DebugServer {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
             send(key: "v", code: 9, window: w, flags: .command)
+            return "{}"
+        case ("POST", "/appearance"):
+            switch json["mode"] as? String {
+            case "light": NSApp.appearance = NSAppearance(named: .aqua)
+            case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+            default: NSApp.appearance = nil
+            }
             return "{}"
         case ("POST", "/proxy"):
             // The same call the System Proxy switch makes, for when the window is not on screen.
