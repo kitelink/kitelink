@@ -96,7 +96,7 @@ struct AboutView: View {
     @EnvironmentObject var m: AppModel
     var body: some View {
         VStack(spacing: 12) {
-            KiteMark(size: 96, zoom: 1.3)
+            KiteMark(size: 92)
             Text("KiteLink").font(.title2.weight(.semibold))
             Text("Version \(m.version) · \(m.coreState.label)").foregroundStyle(.secondary).font(.callout)
             Text("A native proxy client for Clash and mihomo profiles. Paste a link, pick a node, fly.")

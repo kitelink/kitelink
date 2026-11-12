@@ -332,7 +332,7 @@ struct Onboarding: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            KiteMark(size: 110, zoom: 1.3)
+            KiteMark(size: 104)
             VStack(spacing: 6) {
                 Text("Add your subscription").font(.system(size: 22, weight: .semibold))
                 Text("Paste the link your provider gave you. KiteLink keeps it fresh and puts your nodes in the menu bar.")

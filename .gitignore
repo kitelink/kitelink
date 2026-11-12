@@ -8,3 +8,6 @@ xcuserdata/
 .DS_Store
 *.dmg
 dist/
+
+# logo studies that were not chosen (kept locally only)
+brand/explorations/

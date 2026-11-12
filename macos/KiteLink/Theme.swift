@@ -2,13 +2,18 @@ import SwiftUI
 import AppKit
 import KiteKit
 
-/// The few colours the app uses beyond the system's. Warm accent from the mark; everything else follows the system
-/// appearance so the window feels like a native utility in light and dark.
+/// The few colours the app uses beyond the system's. The mark's Dawn palette, with its violet as the accent for
+/// selection and controls; everything else follows the system appearance so the window feels like a native utility
+/// in light and dark.
 enum Kite {
-    static let amber = Color(red: 1, green: 0.784, blue: 0.341)
-    static let coral = Color(red: 1, green: 0.42, blue: 0.29)
-    static let accent = Color(red: 1, green: 0.55, blue: 0.3)
-    static let ink = Color(red: 0.06, green: 0.078, blue: 0.2)
+    static let peach = Color(red: 1, green: 0.761, blue: 0.69)
+    static let rose = Color(red: 1, green: 0.561, blue: 0.659)
+    static let lilac = Color(red: 0.718, green: 0.612, blue: 1)
+    static let blue = Color(red: 0.435, green: 0.58, blue: 1)
+    /// Dawn Violet, between the leeward half's two ends; a step deeper in light mode so white labels read on it.
+    static let accent = dynamic(light: NSColor(red: 0.427, green: 0.455, blue: 0.957, alpha: 1), dark: NSColor(red: 0.51, green: 0.541, blue: 0.988, alpha: 1))
+    /// Rose into violet, for the few places that are drawn rather than system controls (the quota bar).
+    static let sweep = LinearGradient(colors: [rose, Color(red: 0.6, green: 0.58, blue: 1)], startPoint: .leading, endPoint: .trailing)
 
     static func dynamic(light: NSColor, dark: NSColor) -> Color {
         Color(nsColor: NSColor(name: nil) { a in a.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light })
@@ -16,7 +21,7 @@ enum Kite {
     static let bar = dynamic(light: NSColor(white: 0.975, alpha: 1), dark: NSColor(white: 0.115, alpha: 1))
     static let side = dynamic(light: NSColor(white: 0.955, alpha: 1), dark: NSColor(white: 0.135, alpha: 1))
     static let bg = dynamic(light: NSColor(white: 1, alpha: 1), dark: NSColor(white: 0.16, alpha: 1))
-    static let rowSelected = dynamic(light: NSColor(red: 1, green: 0.55, blue: 0.3, alpha: 0.14), dark: NSColor(red: 1, green: 0.55, blue: 0.3, alpha: 0.2))
+    static let rowSelected = dynamic(light: NSColor(red: 0.427, green: 0.455, blue: 0.957, alpha: 0.13), dark: NSColor(red: 0.56, green: 0.58, blue: 1, alpha: 0.24))
     static let hairline = Color.primary.opacity(0.09)
     static let good = Color(nsColor: .systemGreen)
     static let fair = Color(nsColor: .systemOrange)

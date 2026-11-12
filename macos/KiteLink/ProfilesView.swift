@@ -97,7 +97,11 @@ struct ProfileRow: View {
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
                                 Capsule().fill(Color.primary.opacity(0.08))
-                                Capsule().fill((u.fraction ?? 0) > 0.9 ? Kite.poor : Kite.accent).frame(width: geo.size.width * (u.fraction ?? 0))
+                                if (u.fraction ?? 0) > 0.9 {
+                                    Capsule().fill(Kite.poor).frame(width: geo.size.width * (u.fraction ?? 0))
+                                } else {
+                                    Capsule().fill(Kite.sweep).frame(width: max(4, geo.size.width * (u.fraction ?? 0)))
+                                }
                             }
                         }.frame(width: 260, height: 4)
                         Text("\(u.used.bytesText) of \(total.bytesText)" + (u.expire.map { " · expires \($0.short)" } ?? "")).font(.caption).foregroundStyle(.secondary)

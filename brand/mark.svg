@@ -1,14 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2C3C7E"/><stop offset="1" stop-color="#0F1433"/></linearGradient>
-    <radialGradient id="glow" cx="560" cy="430" r="420" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF8A5B" stop-opacity="0.28"/><stop offset="1" stop-color="#FF8A5B" stop-opacity="0"/></radialGradient>
-    <linearGradient id="kite" gradientUnits="userSpaceOnUse" x1="490.1" y1="226.1" x2="611.4" y2="649.1"><stop offset="0" stop-color="#FFC857"/><stop offset="1" stop-color="#FF6B4A"/></linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF8F3"/><stop offset="1" stop-color="#FFE3EC"/></linearGradient>
+    <linearGradient id="windward" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC2B0"/><stop offset="1" stop-color="#FF8FA8"/></linearGradient>
+    <linearGradient id="leeward" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B79CFF"/><stop offset="1" stop-color="#6F94FF"/></linearGradient>
+    <filter id="lift" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0B2545" flood-opacity="0.22"/></filter>
   </defs>
-  <g fill="none" stroke="#FFF3DC" stroke-width="24" stroke-linecap="round">
-    <path d="M611.4 649.1 C601.4 779.1 508.0 798.0 358.0 808.0"/>
-    <circle cx="327.0" cy="808.0" r="31"/>
+  <g transform="translate(512 512) rotate(16) scale(1.5) translate(0 -18)">
+    <path d="M0 -265 Q-118 -196 -212 -52 Q-92 78 0 300 Z" fill="url(#windward)"/>
+    <path d="M0 -265 Q118 -196 212 -52 Q92 78 0 300 Z" fill="url(#leeward)"/>
   </g>
-  <path d="M490.1 226.1 L683.9 357.8 L611.4 649.1 L395.5 440.5Z" fill="url(#kite)"/>
-  <path d="M490.1 226.1 L683.9 357.8 L611.4 649.1Z" fill="#1A0D1A" fill-opacity="0.18"/>
-  <path d="M490.1 226.1 L611.4 649.1 M395.5 440.5 L683.9 357.8" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="5" fill="none"/>
 </svg>
