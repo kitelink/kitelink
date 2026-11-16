@@ -103,15 +103,16 @@ func drawMark(_ ctx: CGContext, canvas: CGFloat, background: Bool) {
 }
 
 /// One colour, for the menu bar. Filled halves = proxy on; the outline = proxy off.
+/// Drawn on a 20 pt square so the glyph carries about as much ink as its neighbours (Clash Verge's cat is ~15 × 14 pt).
 func drawTemplate(_ ctx: CGContext, canvas: CGFloat, hollow: Bool = false) {
     let u = canvas / 1024
     ctx.setFillColor(CGColor.black); ctx.setStrokeColor(CGColor.black)
     if hollow {
         var t = Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: 1.42 * u)
         ctx.addPath(Sail.outline.copy(using: &t)!)
-        ctx.setLineWidth(90 * u); ctx.setLineJoin(.round); ctx.strokePath()
+        ctx.setLineWidth(92 * u); ctx.setLineJoin(.round); ctx.strokePath()
     } else {
-        var t = Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: 1.55 * u)
+        var t = Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: 1.68 * u)
         ctx.addPath(Sail.monoHalf(-1).copy(using: &t)!); ctx.addPath(Sail.monoHalf(1).copy(using: &t)!); ctx.fillPath()
     }
 }
@@ -143,7 +144,7 @@ try writeJSON(["images": images, "info": ["version": 1, "author": "xcode"]], "\(
 for (set, hollow) in [("StatusIcon", false), ("StatusIconOff", true)] {
     let dir = "\(assets)/\(set).imageset"
     try fm.createDirectory(atPath: dir, withIntermediateDirectories: true)
-    for (file, px) in [("status.png", 18), ("status@2x.png", 36), ("status@3x.png", 54)] {
+    for (file, px) in [("status.png", 20), ("status@2x.png", 40), ("status@3x.png", 60)] {
         try write(render(px) { drawTemplate($0, canvas: $1, hollow: hollow) }, "\(dir)/\(file)")
     }
     try writeJSON([
