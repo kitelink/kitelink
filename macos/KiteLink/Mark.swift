@@ -1,31 +1,58 @@
 import SwiftUI
 
-/// The mark as SwiftUI drawing: a kite's sail full of wind, folded down the spine into a warm windward half and a
-/// cool leeward half. Same numbers as brand/render.swift.
+/// The mark as SwiftUI drawing: a diamond kite's sail full of wind, its two spars, and a ring where they cross (the
+/// node, the link). Same numbers as brand/render.swift.
 struct KiteMark: View {
     var size: CGFloat = 24
     var mono: Bool = false
 
+    private static let node = CGPoint(x: 0, y: -78)
+    private static var outline: Path {
+        var p = Path()
+        p.move(to: CGPoint(x: 0, y: -265))
+        p.addQuadCurve(to: CGPoint(x: 212, y: -52), control: CGPoint(x: 118, y: -196))
+        p.addQuadCurve(to: CGPoint(x: 0, y: 300), control: CGPoint(x: 118, y: 132))
+        p.addQuadCurve(to: CGPoint(x: -212, y: -52), control: CGPoint(x: -118, y: 132))
+        p.addQuadCurve(to: CGPoint(x: 0, y: -265), control: CGPoint(x: -118, y: -196))
+        p.closeSubpath()
+        return p
+    }
+    private static func spars(gap: CGFloat) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: 0, y: -265)); p.addLine(to: CGPoint(x: 0, y: node.y - gap))
+        p.move(to: CGPoint(x: 0, y: node.y + gap)); p.addLine(to: CGPoint(x: 0, y: 300))
+        p.move(to: CGPoint(x: -212, y: -52)); p.addQuadCurve(to: CGPoint(x: -gap, y: node.y), control: CGPoint(x: -106, y: -78))
+        p.move(to: CGPoint(x: gap, y: node.y)); p.addQuadCurve(to: CGPoint(x: 212, y: -52), control: CGPoint(x: 106, y: -78))
+        return p
+    }
+    private static func circle(_ r: CGFloat) -> Path {
+        Path(ellipseIn: CGRect(x: node.x - r, y: node.y - r, width: 2 * r, height: 2 * r))
+    }
+
     var body: some View {
         Canvas { ctx, sz in
-            let k = sz.width / 1024 * 1.5
-            let t = CGAffineTransform(translationX: sz.width / 2, y: sz.height / 2)
-                .rotated(by: 16 * .pi / 180).scaledBy(x: k, y: k).translatedBy(x: 0, y: -18)
-            func half(_ s: CGFloat) -> Path {
-                var p = Path()
-                p.move(to: CGPoint(x: 0, y: -265))
-                p.addQuadCurve(to: CGPoint(x: s * 212, y: -52), control: CGPoint(x: s * 118, y: -196))
-                p.addQuadCurve(to: CGPoint(x: 0, y: 300), control: CGPoint(x: s * 92, y: 78))
-                p.closeSubpath()
-                return p.applying(t)
-            }
-            let top = CGPoint(x: 0, y: -265).applying(t), bottom = CGPoint(x: 0, y: 300).applying(t)
+            let k = sz.width / 1024 * 1.36
+            ctx.translateBy(x: sz.width / 2, y: sz.height / 2)
+            ctx.rotate(by: .degrees(16))
+            ctx.scaleBy(x: k, y: k)
+            ctx.translateBy(x: 0, y: -18)
             if mono {
-                ctx.fill(half(-1), with: .color(.primary))
-                ctx.fill(half(1), with: .color(.primary.opacity(0.62)))
+                ctx.drawLayer { layer in
+                    layer.fill(Self.outline, with: .color(.primary))
+                    layer.blendMode = .destinationOut
+                    layer.stroke(Self.spars(gap: 0), with: .color(.black), lineWidth: 42)
+                    layer.fill(Self.circle(86), with: .color(.black))
+                    layer.blendMode = .normal
+                    layer.fill(Self.circle(42), with: .color(.primary))
+                }
             } else {
-                ctx.fill(half(-1), with: .linearGradient(Gradient(colors: [Kite.peach, Kite.rose]), startPoint: top, endPoint: bottom))
-                ctx.fill(half(1), with: .linearGradient(Gradient(colors: [Kite.lilac, Kite.blue]), startPoint: top, endPoint: bottom))
+                ctx.fill(Self.outline, with: .linearGradient(
+                    Gradient(stops: [.init(color: Kite.peach, location: 0), .init(color: Kite.rose, location: 0.38),
+                                     .init(color: Kite.lilac, location: 0.68), .init(color: Kite.blue, location: 1)]),
+                    startPoint: CGPoint(x: -212, y: -265), endPoint: CGPoint(x: 212, y: 300)))
+                ctx.stroke(Self.spars(gap: 62), with: .color(.white), style: StrokeStyle(lineWidth: max(16, 1.2 / k), lineCap: .round))
+                ctx.fill(Self.circle(56), with: .color(.white))
+                ctx.fill(Self.circle(22), with: .color(Kite.rose))
             }
         }
         .frame(width: size, height: size)

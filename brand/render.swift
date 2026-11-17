@@ -18,40 +18,38 @@ let hexLilac: UInt32 = 0xB79CFF, hexBlue: UInt32 = 0x6F94FF      // leeward half
 let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
 
 // ------------------------------------------------------------------------------------------- geometry
-/// The sail: a kite's diamond with the leading edges bowed out by the wind and the trailing edges drawn in, folded
-/// down the spine into two halves. Local coordinates, y down, spine on x = 0; `side` is -1 (left) or +1 (right).
+/// The mark: a diamond kite's sail full of wind, its two spars, and a ring where the spars cross (the node, the link).
+/// Local coordinates, y down, spine on x = 0.
 enum Sail {
     static let tilt: CGFloat = 16          // degrees, leaning into the wind
     static let top = CGPoint(x: 0, y: -265), bottom = CGPoint(x: 0, y: 300)
+    static let left = CGPoint(x: -212, y: -52), right = CGPoint(x: 212, y: -52)
     static let offset = CGPoint(x: 0, y: -18)   // centres the sail on its own middle
+    /// The node: where the bowed cross spar meets the spine.
+    static let node = CGPoint(x: 0, y: -78)
 
-    static func half(_ side: CGFloat) -> CGPath {
-        let p = CGMutablePath()
-        p.move(to: top)
-        p.addQuadCurve(to: CGPoint(x: side * 212, y: -52), control: CGPoint(x: side * 118, y: -196))
-        p.addQuadCurve(to: bottom, control: CGPoint(x: side * 92, y: 78))
-        p.closeSubpath()
-        return p
-    }
-    /// The halves pulled apart along the spine, for the one-colour glyph.
-    static func monoHalf(_ side: CGFloat) -> CGPath {
-        let p = CGMutablePath()
-        p.move(to: CGPoint(x: side * 17, y: -240))
-        p.addQuadCurve(to: CGPoint(x: side * 196, y: -54), control: CGPoint(x: side * 116, y: -180))
-        p.addQuadCurve(to: CGPoint(x: side * 17, y: 250), control: CGPoint(x: side * 92, y: 70))
-        p.closeSubpath()
-        return p
-    }
+    /// Leading edges bowed out by the wind, trailing edges full.
     static var outline: CGPath {
         let p = CGMutablePath()
         p.move(to: top)
-        p.addQuadCurve(to: CGPoint(x: 212, y: -52), control: CGPoint(x: 118, y: -196))
-        p.addQuadCurve(to: bottom, control: CGPoint(x: 92, y: 78))
-        p.addQuadCurve(to: CGPoint(x: -212, y: -52), control: CGPoint(x: -92, y: 78))
+        p.addQuadCurve(to: right, control: CGPoint(x: 118, y: -196))
+        p.addQuadCurve(to: bottom, control: CGPoint(x: 118, y: 132))
+        p.addQuadCurve(to: left, control: CGPoint(x: -118, y: 132))
         p.addQuadCurve(to: top, control: CGPoint(x: -118, y: -196))
         p.closeSubpath()
         return p
     }
+    /// The spine and the cross spar (bowed, like a real bowed kite), stopping `gap` short of the node.
+    static func spars(gap: CGFloat) -> CGPath {
+        let p = CGMutablePath()
+        p.move(to: top); p.addLine(to: CGPoint(x: 0, y: node.y - gap))
+        p.move(to: CGPoint(x: 0, y: node.y + gap)); p.addLine(to: bottom)
+        // the cross spar is the quadratic left → (0, -104) → right; its halves are the quadratics below
+        p.move(to: left); p.addQuadCurve(to: CGPoint(x: -gap, y: node.y), control: CGPoint(x: -106, y: -78))
+        p.move(to: CGPoint(x: gap, y: node.y)); p.addQuadCurve(to: right, control: CGPoint(x: 106, y: -78))
+        return p
+    }
+    static func circle(_ r: CGFloat) -> CGPath { CGPath(ellipseIn: CGRect(x: node.x - r, y: node.y - r, width: 2 * r, height: 2 * r), transform: nil) }
     /// Local → canvas: centred at `c`, tilted, scaled by `k`.
     static func transform(center c: CGPoint, scale k: CGFloat) -> CGAffineTransform {
         CGAffineTransform(translationX: c.x, y: c.y).rotated(by: tilt * .pi / 180).scaledBy(x: k, y: k).translatedBy(x: offset.x, y: offset.y)
@@ -71,13 +69,20 @@ func superellipse(_ r: CGRect, n: CGFloat = 4.6) -> CGPath {
     return p
 }
 
-func fillHalf(_ ctx: CGContext, _ side: CGFloat, _ t: CGAffineTransform, _ from: UInt32, _ to: UInt32) {
-    var tt = t
-    guard let path = Sail.half(side).copy(using: &tt) else { return }
+/// The sweep across the sail, nose to tail: peach, rose, lilac, sky.
+let sweepStops: [(UInt32, CGFloat)] = [(hexPeach, 0), (hexRose, 0.38), (hexLilac, 0.68), (hexBlue, 1)]
+let sweepFrom = CGPoint(x: -212, y: -265), sweepTo = CGPoint(x: 212, y: 300)
+
+func drawSail(_ ctx: CGContext, _ t: CGAffineTransform) {
     ctx.saveGState()
-    ctx.addPath(path); ctx.clip()
-    let g = CGGradient(colorsSpace: srgb, colors: [rgb(from), rgb(to)] as CFArray, locations: [0, 1])!
-    ctx.drawLinearGradient(g, start: Sail.top.applying(t), end: Sail.bottom.applying(t), options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+    ctx.concatenate(t)
+    ctx.addPath(Sail.outline); ctx.clip()
+    let g = CGGradient(colorsSpace: srgb, colors: sweepStops.map { rgb($0.0) } as CFArray, locations: sweepStops.map { $0.1 })!
+    ctx.drawLinearGradient(g, start: sweepFrom, end: sweepTo, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+    ctx.setStrokeColor(rgb(0xFFFFFF)); ctx.setLineWidth(16); ctx.setLineCap(.round)
+    ctx.addPath(Sail.spars(gap: 62)); ctx.strokePath()
+    ctx.setFillColor(rgb(0xFFFFFF)); ctx.addPath(Sail.circle(56)); ctx.fillPath()
+    ctx.setFillColor(rgb(hexRose)); ctx.addPath(Sail.circle(22)); ctx.fillPath()
     ctx.restoreGState()
 }
 
@@ -97,24 +102,33 @@ func drawMark(_ ctx: CGContext, canvas: CGFloat, background: Bool) {
         ctx.restoreGState()
         ctx.addPath(shape); ctx.setStrokeColor(rgb(0x0B2545, 0.06)); ctx.setLineWidth(2 * u); ctx.strokePath()
     }
-    let t = Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: (background ? 1.1 : 1.5) * u)
-    fillHalf(ctx, -1, t, hexPeach, hexRose)
-    fillHalf(ctx, 1, t, hexLilac, hexBlue)
+    drawSail(ctx, Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: (background ? markInIcon : markAlone) * u))
 }
+let markInIcon: CGFloat = 1.0, markAlone: CGFloat = 1.36
 
-/// One colour, for the menu bar. Filled halves = proxy on; the outline = proxy off.
-/// Drawn on a 20 pt square so the glyph carries about as much ink as its neighbours (Clash Verge's cat is ~15 × 14 pt).
+/// One colour, for the menu bar. On: the sail with the spars and the ring cut out of it. Off: the outline and the ring.
+/// Drawn on a 20 pt square so the glyph carries about as much ink as its neighbours.
+let glyphScale: CGFloat = 1.5
 func drawTemplate(_ ctx: CGContext, canvas: CGFloat, hollow: Bool = false) {
     let u = canvas / 1024
+    ctx.saveGState()
+    // the outline's stroke reaches past the sail, so the hollow glyph is drawn a little smaller to match
+    ctx.concatenate(Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: glyphScale * (hollow ? 0.9 : 1) * u))
     ctx.setFillColor(CGColor.black); ctx.setStrokeColor(CGColor.black)
     if hollow {
-        var t = Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: 1.42 * u)
-        ctx.addPath(Sail.outline.copy(using: &t)!)
-        ctx.setLineWidth(92 * u); ctx.setLineJoin(.round); ctx.strokePath()
+        ctx.setLineJoin(.round)
+        ctx.addPath(Sail.outline); ctx.setLineWidth(68); ctx.strokePath()
+        ctx.addPath(Sail.circle(56)); ctx.setLineWidth(48); ctx.strokePath()
     } else {
-        var t = Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: 1.68 * u)
-        ctx.addPath(Sail.monoHalf(-1).copy(using: &t)!); ctx.addPath(Sail.monoHalf(1).copy(using: &t)!); ctx.fillPath()
+        ctx.addPath(Sail.outline); ctx.fillPath()
+        ctx.setBlendMode(.clear)
+        ctx.setLineWidth(42); ctx.setLineCap(.butt)
+        ctx.addPath(Sail.spars(gap: 0)); ctx.strokePath()
+        ctx.addPath(Sail.circle(86)); ctx.fillPath()
+        ctx.setBlendMode(.normal)
+        ctx.addPath(Sail.circle(42)); ctx.fillPath()
     }
+    ctx.restoreGState()
 }
 
 func render(_ size: Int, _ draw: (CGContext, CGFloat) -> Void) -> Data {
@@ -164,12 +178,13 @@ try write(render(256) { drawTemplate($0, canvas: $1, hollow: true) }, "\(brandDi
 // SVG, from the same numbers.
 func f(_ v: CGFloat) -> String { String(format: "%g", Double((v * 10).rounded() / 10)) }
 func hex(_ v: UInt32) -> String { String(format: "#%06X", v) }
-func halfD(_ s: CGFloat) -> String { "M0 -265 Q\(f(s * 118)) -196 \(f(s * 212)) -52 Q\(f(s * 92)) 78 0 300 Z" }
+let outlineD = "M0 -265 Q118 -196 212 -52 Q118 132 0 300 Q-118 132 -212 -52 Q-118 -196 0 -265 Z"
+let sparsD = "M0 -265 L0 -140 M0 -16 L0 300 M-212 -52 Q-106 -78 -62 -78 M62 -78 Q106 -78 212 -52"
 func svg(background: Bool) -> String {
     var out = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1024 1024\" width=\"1024\" height=\"1024\">\n  <defs>\n"
     out += "    <linearGradient id=\"bg\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"\(hex(hexBgTop))\"/><stop offset=\"1\" stop-color=\"\(hex(hexBgBottom))\"/></linearGradient>\n"
-    out += "    <linearGradient id=\"windward\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"\(hex(hexPeach))\"/><stop offset=\"1\" stop-color=\"\(hex(hexRose))\"/></linearGradient>\n"
-    out += "    <linearGradient id=\"leeward\" x1=\"0\" y1=\"0\" x2=\"0\" y2=\"1\"><stop offset=\"0\" stop-color=\"\(hex(hexLilac))\"/><stop offset=\"1\" stop-color=\"\(hex(hexBlue))\"/></linearGradient>\n"
+    out += "    <linearGradient id=\"sweep\" gradientUnits=\"userSpaceOnUse\" x1=\"\(f(sweepFrom.x))\" y1=\"\(f(sweepFrom.y))\" x2=\"\(f(sweepTo.x))\" y2=\"\(f(sweepTo.y))\">"
+    out += sweepStops.map { "<stop offset=\"\(f($0.1 * 100) )%\" stop-color=\"\(hex($0.0))\"/>" }.joined() + "</linearGradient>\n"
     out += "    <filter id=\"lift\" x=\"-20%\" y=\"-20%\" width=\"140%\" height=\"140%\"><feDropShadow dx=\"0\" dy=\"14\" stdDeviation=\"16\" flood-color=\"#0B2545\" flood-opacity=\"0.22\"/></filter>\n  </defs>\n"
     if background {
         var d = ""
@@ -181,8 +196,10 @@ func svg(background: Bool) -> String {
         out += "  <path d=\"\(d)Z\" fill=\"url(#bg)\" filter=\"url(#lift)\"/>\n"
         out += "  <path d=\"\(d)Z\" fill=\"none\" stroke=\"#0B2545\" stroke-opacity=\"0.06\" stroke-width=\"2\"/>\n"
     }
-    out += "  <g transform=\"translate(512 512) rotate(\(f(Sail.tilt))) scale(\(background ? "1.1" : "1.5")) translate(\(f(Sail.offset.x)) \(f(Sail.offset.y)))\">\n"
-    out += "    <path d=\"\(halfD(-1))\" fill=\"url(#windward)\"/>\n    <path d=\"\(halfD(1))\" fill=\"url(#leeward)\"/>\n  </g>\n</svg>\n"
+    out += "  <g transform=\"translate(512 512) rotate(\(f(Sail.tilt))) scale(\(f(background ? markInIcon : markAlone))) translate(\(f(Sail.offset.x)) \(f(Sail.offset.y)))\">\n"
+    out += "    <path d=\"\(outlineD)\" fill=\"url(#sweep)\"/>\n"
+    out += "    <path d=\"\(sparsD)\" fill=\"none\" stroke=\"#FFFFFF\" stroke-width=\"16\" stroke-linecap=\"round\"/>\n"
+    out += "    <circle cx=\"0\" cy=\"-78\" r=\"56\" fill=\"#FFFFFF\"/><circle cx=\"0\" cy=\"-78\" r=\"22\" fill=\"\(hex(hexRose))\"/>\n  </g>\n</svg>\n"
     return out
 }
 try svg(background: true).write(toFile: "\(brandDir)/icon.svg", atomically: true, encoding: .utf8)

@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF8F3"/><stop offset="1" stop-color="#FFE3EC"/></linearGradient>
-    <linearGradient id="windward" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC2B0"/><stop offset="1" stop-color="#FF8FA8"/></linearGradient>
-    <linearGradient id="leeward" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B79CFF"/><stop offset="1" stop-color="#6F94FF"/></linearGradient>
+    <linearGradient id="sweep" gradientUnits="userSpaceOnUse" x1="-212" y1="-265" x2="212" y2="300"><stop offset="0%" stop-color="#FFC2B0"/><stop offset="38%" stop-color="#FF8FA8"/><stop offset="68%" stop-color="#B79CFF"/><stop offset="100%" stop-color="#6F94FF"/></linearGradient>
     <filter id="lift" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#0B2545" flood-opacity="0.22"/></filter>
   </defs>
-  <g transform="translate(512 512) rotate(16) scale(1.5) translate(0 -18)">
-    <path d="M0 -265 Q-118 -196 -212 -52 Q-92 78 0 300 Z" fill="url(#windward)"/>
-    <path d="M0 -265 Q118 -196 212 -52 Q92 78 0 300 Z" fill="url(#leeward)"/>
+  <g transform="translate(512 512) rotate(16) scale(1.4) translate(0 -18)">
+    <path d="M0 -265 Q118 -196 212 -52 Q118 132 0 300 Q-118 132 -212 -52 Q-118 -196 0 -265 Z" fill="url(#sweep)"/>
+    <path d="M0 -265 L0 -140 M0 -16 L0 300 M-212 -52 Q-106 -78 -62 -78 M62 -78 Q106 -78 212 -52" fill="none" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round"/>
+    <circle cx="0" cy="-78" r="56" fill="#FFFFFF"/><circle cx="0" cy="-78" r="22" fill="#FF8FA8"/>
   </g>
 </svg>

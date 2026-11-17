@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- New mark: the whole kite with its spars and a ring where they cross (the node), replacing the two-piece sail;
+  new app icon, menu bar glyph and in-app mark
+- Larger menu bar glyph, about the size of its neighbours
+
 ## 0.1.0 — macOS
 
 First version: the macOS app.
