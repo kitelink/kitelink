@@ -22,7 +22,7 @@ A diamond kite's sail with its two spars and a ring where they cross.
 - **Colour.** One sweep across the whole sail, nose to tail: peach, rose, lilac, sky.
 - **Tilt.** 16° clockwise: nose up and to the right, climbing.
 - **App icon.** The mark on a pale dawn sky inside the macOS rounded square (824/1024).
-- **Menu bar glyph.** One colour. On: the sail with the spars and the ring cut out of it. Off: the outline and the ring.
+- **Menu bar glyph.** One colour: the outline with the node in the middle. Off: the node is a ring. On: it fills in.
 
 `render.swift` is the source of truth: it draws every size from geometry (no scaling) and writes the Xcode asset
 catalog, the PNGs here and both SVGs.

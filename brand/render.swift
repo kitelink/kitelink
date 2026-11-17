@@ -106,27 +106,19 @@ func drawMark(_ ctx: CGContext, canvas: CGFloat, background: Bool) {
 }
 let markInIcon: CGFloat = 1.0, markAlone: CGFloat = 1.36
 
-/// One colour, for the menu bar. On: the sail with the spars and the ring cut out of it. Off: the outline and the ring.
+/// One colour, for the menu bar: the kite's outline with the node in the middle. Off: the node is a ring. On: it fills in.
 /// Drawn on a 20 pt square so the glyph carries about as much ink as its neighbours.
-let glyphScale: CGFloat = 1.5
+let glyphScale: CGFloat = 1.35
 func drawTemplate(_ ctx: CGContext, canvas: CGFloat, hollow: Bool = false) {
     let u = canvas / 1024
     ctx.saveGState()
-    // the outline's stroke reaches past the sail, so the hollow glyph is drawn a little smaller to match
-    ctx.concatenate(Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: glyphScale * (hollow ? 0.9 : 1) * u))
-    ctx.setFillColor(CGColor.black); ctx.setStrokeColor(CGColor.black)
+    ctx.concatenate(Sail.transform(center: CGPoint(x: 512 * u, y: 512 * u), scale: glyphScale * u))
+    ctx.setFillColor(CGColor.black); ctx.setStrokeColor(CGColor.black); ctx.setLineJoin(.round)
+    ctx.addPath(Sail.outline); ctx.setLineWidth(68); ctx.strokePath()
     if hollow {
-        ctx.setLineJoin(.round)
-        ctx.addPath(Sail.outline); ctx.setLineWidth(68); ctx.strokePath()
         ctx.addPath(Sail.circle(56)); ctx.setLineWidth(48); ctx.strokePath()
     } else {
-        ctx.addPath(Sail.outline); ctx.fillPath()
-        ctx.setBlendMode(.clear)
-        ctx.setLineWidth(42); ctx.setLineCap(.butt)
-        ctx.addPath(Sail.spars(gap: 0)); ctx.strokePath()
-        ctx.addPath(Sail.circle(86)); ctx.fillPath()
-        ctx.setBlendMode(.normal)
-        ctx.addPath(Sail.circle(42)); ctx.fillPath()
+        ctx.addPath(Sail.circle(80)); ctx.fillPath()
     }
     ctx.restoreGState()
 }

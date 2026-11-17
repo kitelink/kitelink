@@ -37,14 +37,8 @@ struct KiteMark: View {
             ctx.scaleBy(x: k, y: k)
             ctx.translateBy(x: 0, y: -18)
             if mono {
-                ctx.drawLayer { layer in
-                    layer.fill(Self.outline, with: .color(.primary))
-                    layer.blendMode = .destinationOut
-                    layer.stroke(Self.spars(gap: 0), with: .color(.black), lineWidth: 42)
-                    layer.fill(Self.circle(86), with: .color(.black))
-                    layer.blendMode = .normal
-                    layer.fill(Self.circle(42), with: .color(.primary))
-                }
+                ctx.stroke(Self.outline, with: .color(.primary), style: StrokeStyle(lineWidth: 68, lineJoin: .round))
+                ctx.fill(Self.circle(80), with: .color(.primary))
             } else {
                 ctx.fill(Self.outline, with: .linearGradient(
                     Gradient(stops: [.init(color: Kite.peach, location: 0), .init(color: Kite.rose, location: 0.38),
